@@ -4,6 +4,7 @@
 #include <fstream>
 #include <regex>
 #include <string>
+#include <unistd.h>
 
 namespace LinuxParser {
 // Paths
@@ -20,7 +21,8 @@ const std::string kPasswordPath{"/etc/passwd"};
 
 // System
 float MemoryUtilization();
-long UpTime();
+long SystemUpTime();
+float CpuUtilization(int pid);
 std::vector<int> Pids();
 int TotalProcesses();
 int RunningProcesses();
@@ -51,7 +53,7 @@ std::string Command(int pid);
 std::string Ram(int pid);
 std::string Uid(int pid);
 std::string User(int pid);
-long int UpTime(int pid);
+long int ProcessUpTime(int pid);
 };  // namespace LinuxParser
 
 #endif
