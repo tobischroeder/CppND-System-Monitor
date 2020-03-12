@@ -183,7 +183,7 @@ int LinuxParser::TotalProcesses() {
     }
   }
   
-   return -1;
+   return 0;
    
 }
 
@@ -210,7 +210,7 @@ int LinuxParser::RunningProcesses()
     }
   }
   
-   return -1;
+   return 0;
  }
 
 // TODO: Read and return the command associated with a process
@@ -337,12 +337,17 @@ long LinuxParser::ProcessUpTime(int pid)
 
     }
   }
+  if (!times.empty())
+  {
+    long hertz = sysconf(_SC_CLK_TCK);
+    long total_time = times[0] + times[1] + times[2] + times[3];
+    long seconds = LinuxParser::SystemUpTime() - (times[4]/ hertz);
 
-  long hertz = sysconf(_SC_CLK_TCK);
-  long total_time = times[0] + times[1] + times[2] + times[3];
-  long seconds = LinuxParser::SystemUpTime() - (times[4]/ hertz);
+    return  seconds; 
 
-  return  seconds; 
+  }
+
+  return 0;
 }
 // TODO: Read and return the uptime of a process
 // REMOVE: [[maybe_unused]] once you define the function
@@ -368,9 +373,16 @@ float LinuxParser::CpuUtilization(int pid)
     }
   }
 
-  long hertz = sysconf(_SC_CLK_TCK);
-  long total_time = times[0] + times[1] + times[3] + times[4];
-  long seconds = LinuxParser::ProcessUpTime(pid) - (times[4]/ hertz);
+  if (!times.empty())
+  {
+    long hertz = sysconf(_SC_CLK_TCK);
+    long total_time = times[0] + times[1] + times[3] + times[4];
+    long seconds = LinuxParser::ProcessUpTime(pid) - (times[4]/ hertz);
 
-  return  float(100 * ((total_time / hertz) / seconds)); 
+    return  float(100 * ((total_time / hertz) / seconds)); 
+  }
+
+  return 0;
+
+  
 }
