@@ -2,8 +2,9 @@
 #include <unistd.h>
 #include <string>
 #include <vector>
-
 #include "linux_parser.h"
+#include <iostream>
+#include <iomanip>
 
 using std::stof;
 using std::string;
@@ -101,7 +102,7 @@ float LinuxParser::MemoryUtilization() {
     }
   }
 
-  utilization = memtotal - memfree;
+  utilization = 1 - (memfree / (memtotal + memfree));
 
   return utilization; 
   
@@ -110,26 +111,23 @@ float LinuxParser::MemoryUtilization() {
 // TODO: Read and return the system uptime
 long LinuxParser::SystemUpTime() { 
   long uptime{0};
-  string suptime, sidletime;
+  string suptime, nuptime;
   string line;
 
   std::ifstream stream(kProcDirectory + kUptimeFilename);
   if (stream.is_open()){
     std::getline(stream, line);
     std::istringstream linestream(line);
-    linestream >> suptime >> sidletime;
+    linestream >> suptime ;
   }
-  
+
   uptime = std::stol(suptime, nullptr, 10);
-  
+
   return uptime; 
 }
 
 // TODO: Read and return the number of jiffies for the system
 long LinuxParser::Jiffies() { 
-
-  
-  
   return 0;
 }
 
@@ -144,20 +142,28 @@ long LinuxParser::ActiveJiffies() { return 0; }
 long LinuxParser::IdleJiffies() { return 0; }
 
 // TODO: Read and return CPU utilization
-vector<string> LinuxParser::CpuUtilization() { 
-  string  cpu, user, nice, system, idle;
+float LinuxParser::CpuUtilization() { 
+  string  cpu, user, nice, system, idle, iowait, irq, softirq, steal;
   string line;
   std::ifstream stream(kProcDirectory + kStatFilename);
   if (stream.is_open()){
     std::getline(stream, line);
     std::istringstream linestream(line);
-    linestream >> cpu >> user >> nice >> system >> idle;
+    linestream >> cpu >> user >> nice >> system >> idle >> iowait >> irq >> softirq >> steal;
     if (cpu == "cpu")
     {
-      return{user, nice, system, idle};
+      float fnonidle = std::stof(user) + std::stof(nice) + std::stof(system) + std::stof(irq) + std::stof(softirq) + std::stof(steal);
+      float fidle = std::stof(idle) + std::stof(iowait);
+      float total = fnonidle + fidle;
+
+      float cpu_uti = (total -fidle) / total;
+
+      return cpu_uti;
+
     }
+
   }
-  return {}; 
+  return 0; 
 }
 
 // TODO: Read and return the total number of processes
@@ -228,8 +234,6 @@ string LinuxParser::Command(int pid)
     linestream >> command;
   
   }
-
-
    return command; 
    
 }
@@ -251,6 +255,9 @@ string LinuxParser::Ram(int pid)
       {
         if (param == "VmSize:")
         {
+          long ram = stol(value, nullptr, 10);
+          ram = ram / 1000;
+          value = to_string(ram);
           
           return value;
         }
@@ -318,36 +325,38 @@ string LinuxParser::User(int pid)
 
 long LinuxParser::ProcessUpTime(int pid)
 {
-  int counter{1};
-  std::vector<long> times;
+  long uptime{0};
   string param, line;
-  std::ifstream filestream(kProcDirectory + to_string(pid) + "/stat");
-  if(filestream.is_open())
-  {
-    while(std::getline(filestream,line))
+  int counter{0};
+ 
+  std::ifstream filestream(kProcDirectory + "/" + to_string(pid) + "/stat");
+ 
+  if (filestream.is_open()){
+    std::getline(filestream, line);
+    std::istringstream linestream(line);
+    while (linestream >> param)
     {
-      std::istringstream linestream(line);
-      while(linestream >> param)
+      if (counter == 14)
       {
-        if (counter == 14 || counter == 15 || counter == 16 || counter == 17 ||  counter == 22)
-        {
-          times.push_back(stol(param, nullptr, 10));
-        }
+        uptime = std::stol(param, nullptr, 10);
+        break;
       }
 
-    }
-  }
-  if (!times.empty())
-  {
-    long hertz = sysconf(_SC_CLK_TCK);
-    long total_time = times[0] + times[1] + times[2] + times[3];
-    long seconds = LinuxParser::SystemUpTime() - (times[4]/ hertz);
+      counter ++; 
+      
 
+    }
+   
+  }
+    long hertz = sysconf(_SC_CLK_TCK);
+    if (hertz == 0)
+    {
+      hertz = 1;
+    }
+   
+    long seconds = uptime / hertz;
     return  seconds; 
 
-  }
-
-  return 0;
 }
 // TODO: Read and return the uptime of a process
 // REMOVE: [[maybe_unused]] once you define the function
@@ -359,27 +368,34 @@ float LinuxParser::CpuUtilization(int pid)
   std::ifstream filestream(kProcDirectory + to_string(pid) + "/stat");
   if(filestream.is_open())
   {
-    while(std::getline(filestream,line))
-    {
+      std::getline(filestream, line);
+    
       std::istringstream linestream(line);
+
       while(linestream >> param)
       {
-        if (counter == 14 || counter == 15 || counter == 16 || counter == 17 ||  counter == 22)
+        if (counter == 14 || counter == 15 || counter == 16 || counter == 17 || counter == 22)
         {
           times.push_back(stol(param, nullptr, 10));
+         
         }
+        counter ++; 
       }
 
-    }
+    
   }
 
   if (!times.empty())
   {
     long hertz = sysconf(_SC_CLK_TCK);
-    long total_time = times[0] + times[1] + times[3] + times[4];
-    long seconds = LinuxParser::ProcessUpTime(pid) - (times[4]/ hertz);
-
-    return  float(100 * ((total_time / hertz) / seconds)); 
+    long total_time = (times[0] + times[1] + times[2] + times[3]) / hertz;
+    long uptime = LinuxParser::SystemUpTime() - (times[4] / hertz);
+    if (uptime == 0)
+    {
+      uptime = 1;
+    }
+    float output = float(total_time) / float(uptime);
+    return  output; 
   }
 
   return 0;

@@ -3,7 +3,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-
 #include "process.h"
 #include <linux_parser.h>
 
@@ -18,7 +17,7 @@ using std::vector;
 int Process::Pid() { return this->_pid; }
 
 // TODO: Return this process's CPU utilization
-float Process::CpuUtilization() { return LinuxParser::CpuUtilization(this->_pid); }
+float Process::CpuUtilization() const { return LinuxParser::CpuUtilization(this->_pid); }
 
 // TODO: Return the command that generated this process
 string Process::Command() { return LinuxParser::Command(this->_pid); }
@@ -34,6 +33,6 @@ long int Process::UpTime() { return LinuxParser::ProcessUpTime(this->_pid); }
 
 // TODO: Overload the "less than" comparison operator for Process objects
 // REMOVE: [[maybe_unused]] once you define the function
-bool Process::operator<(Process & a) { 
-    return (this->CpuUtilization() < a.CpuUtilization());
+bool Process::operator<(Process const& a) const { 
+    return (a.CpuUtilization() < this->CpuUtilization());
  }

@@ -3,10 +3,10 @@
 #include <set>
 #include <string>
 #include <vector>
-
-#include "process.h"
 #include "processor.h"
 #include "system.h"
+#include "process.h"
+
 
 using std::set;
 using std::size_t;
@@ -34,11 +34,6 @@ vector<Process>& System::Processes() {
             processes_.emplace_back(pid);
         }
 
-    }
-
-    for(Process & process : processes_)
-    {
-        process.CpuUtilization();
     }
 
     std::sort(processes_.begin(), processes_.end());

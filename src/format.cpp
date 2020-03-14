@@ -3,6 +3,7 @@
 #include "format.h"
 
 using std::string;
+using std::to_string;
 
 // TODO: Complete this helper function
 // INPUT: Long int measuring seconds
@@ -10,17 +11,17 @@ using std::string;
 // REMOVE: [[maybe_unused]] once you define the function
 string Format::ElapsedTime(long time) 
 { 
-    long seconds{0}, minutes{0}, hours{0}, remainder{0};
+    int seconds{0}, minutes{0}, hours{0};
 
-    remainder = time / 60;
+    hours = time / 3600;
+    minutes = (time % 3600) / 60;
     seconds = time % 60;
 
-    remainder = remainder / 60;
-    minutes = remainder % 60;
+    char x[10];
 
-    hours = remainder % 60;
+    sprintf(x,"%02d:%02d:%02d", hours, minutes, seconds);
 
-    string output = std::to_string(hours) + ":" + std::to_string(minutes) + ":" + std::to_string(seconds);
+    string output = x;
 
     return output;
     
