@@ -27,11 +27,13 @@ string LinuxParser::OperatingSystem() {
       while (linestream >> key >> value) {
         if (key == "PRETTY_NAME") {
           std::replace(value.begin(), value.end(), '_', ' ');
+          filestream.close();
           return value;
         }
       }
     }
   }
+  filestream.close();
   return value;
 }
 
@@ -45,6 +47,7 @@ string LinuxParser::Kernel() {
     std::istringstream linestream(line);
     linestream >> os >> kernel;
   }
+  stream.close();
   return kernel;
 }
 
@@ -102,6 +105,7 @@ float LinuxParser::MemoryUtilization() {
 
     }
   }
+  stream.close();
 
   utilization = 1 - (memfree / (memtotal + memfree));
 
@@ -121,7 +125,7 @@ long LinuxParser::SystemUpTime() {
     std::istringstream linestream(line);
     linestream >> suptime ;
   }
-
+  stream.close();
   uptime = std::stol(suptime, nullptr, 10);
 
   return uptime; 
@@ -157,12 +161,13 @@ float LinuxParser::CpuUtilization() {
       float total = fnonidle + fidle;
 
       float cpu_uti = (total -fidle) / total;
-
+      stream.close();
       return cpu_uti;
 
     }
 
   }
+  stream.close();
   return 0; 
 }
 
@@ -183,13 +188,14 @@ int LinuxParser::TotalProcesses() {
         if (name == "processes")
         {
           processes = stoi(sprocesses);
+          filestream.close();
           return processes;
         }
       }
     }
   }
-  
-   return 0;
+  filestream.close();
+  return 0;
    
 }
 
@@ -210,13 +216,14 @@ int LinuxParser::RunningProcesses()
         if (name == "procs_running")
         {
           running_processes = stoi(s_running_processes);
+          filestream.close();
           return running_processes;
         }
       }
     }
   }
-  
-   return 0;
+  filestream.close();
+  return 0;
  }
 
 
@@ -233,8 +240,8 @@ string LinuxParser::Command(int pid)
     linestream >> command;
   
   }
-   return command; 
-   
+  filestream.close();
+  return command; 
 }
 
 
@@ -256,13 +263,13 @@ string LinuxParser::Ram(int pid)
           long ram = stol(value, nullptr, 10);
           ram = ram / 1000;
           value = to_string(ram);
-          
+          filestream.close();
           return value;
         }
       }
     }
   }
-
+  filestream.close();
   return string(); 
  }
 
@@ -282,11 +289,13 @@ string LinuxParser::Uid(int pid)
       {
         if (param == "Uid:")
         {
+          filestream.close();
           return value;
         }
       }
     }
   }
+  filestream.close();
 
   return string(); 
 }
@@ -309,11 +318,13 @@ string LinuxParser::User(int pid)
        {
         if (key == uid) 
         {
+          filestream.close();
           return name;
         }
       }
     }
   }
+  filestream.close();
   return string();
   
 }
@@ -349,6 +360,7 @@ long LinuxParser::ProcessUpTime(int pid)
     }
     
     long seconds = LinuxParser::SystemUpTime() - (uptime / hertz);
+    filestream.close();
     return seconds; 
 
 }
@@ -388,8 +400,11 @@ float LinuxParser::CpuUtilization(int pid)
       uptime = 1;
     }
     float output = float(total_time) / float(uptime);
+    filestream.close();
     return  output; 
   }
+
+  filestream.close();
 
   return 0;
 
